@@ -1,0 +1,53 @@
+{
+  "projectType": "frontend",
+  "projectName": "NetworkFlux & MaxFlux Generator",
+  "projectDescription": "A React-based interactive tool for visualizing Network Flux graphs and computing maximum flow using the Ford-Fulkerson algorithm with step-by-step animation.",
+  "theme": "palm",
+  "primaryColor": "#FF0072",
+  "lightColor": "#FF4DA0",
+  "darkColor": "#CC005A",
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": ["introduction", "quickstart"]
+          },
+          {
+            "group": "Concepts",
+            "pages": ["concepts/network-flux", "concepts/ford-fulkerson", "concepts/graph-representation"]
+          },
+          {
+            "group": "Usage",
+            "pages": ["usage/input-format", "usage/generating-graph", "usage/max-flow-verification", "usage/step-by-step"]
+          },
+          {
+            "group": "Reference",
+            "pages": ["reference/components", "reference/utilities"]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Interactive network flux graph visualization using React Flow",
+    "Ford-Fulkerson maximum flow algorithm implementation",
+    "Step-by-step algorithm walkthrough with forward/backward navigation",
+    "JSON-based adjacency matrix input for graph definition",
+    "Visual indication of source (s) and sink (t) nodes with custom icons",
+    "Bidirectional edge rendering with bezier curve offset",
+    "Real-time max flow validation against expected value"
+  ],
+  "publicApiSurface": [
+    "generateNodesAndEdges(data, maxFlowExpected, maxFlowInitialFlux?) → { nodes, edges, graphWidth, maxFlow }",
+    "verifyMaxFlux(data, stepStop?) → { maxFlow, rGraph, finished }",
+    "fordFulkerson(graph, s, t, V, stepStop) → { maxFlow, rGraph, finished }",
+    "breadthFirstSearch(rGraph, s, t, parent, V) → boolean",
+    "NetworkFlux (React component)",
+    "TextUpdaterNode (React Flow custom node component)",
+    "CustomEdge (React Flow custom edge component)",
+    "getSpecialPath({ sourceX, sourceY, targetX, targetY }, offset) → string"
+  ]
+}
