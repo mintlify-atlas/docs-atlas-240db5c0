@@ -1,0 +1,83 @@
+---
+title: Network flux
+description: What a network flow graph is and how it is represented in NetworkFlux & MaxFlux Generator.
+---
+
+A **network flow graph** is a directed, weighted graph used to model how a commodity — data packets, water, traffic, freight — moves from a single origin to a single destination through a network of intermediate nodes and capacity-constrained edges.
+
+NetworkFlux & MaxFlux Generator works exclusively with this type of graph. Understanding its structure is the foundation for everything else the tool does.
+
+## Anatomy of a flow graph
+
+Every flow graph has three kinds of nodes.
+
+| Role | Index in the matrix | Label in the UI |
+|---|---|---|
+| Source | `0` | `s` |
+| Intermediate | `1` through `n-2` | their index number |
+| Sink | `n-1` (last) | `t` |
+
+The **source** (`s`) is where all flow originates. It has no incoming edges in a well-formed graph. The **sink** (`t`) is where all flow terminates. It has no outgoing edges. Everything in between is an **intermediate node** that routes flow without generating or consuming it.
+
+Edges are **directed**: an edge from node `i` to node `j` carries flow only in that direction. Each edge has a **capacity** — the maximum amount of flow it can carry simultaneously.
+
+## Flow vs. capacity
+
+Capacity is an upper bound; **flow** is what actually passes through an edge during a particular solution. An edge with capacity `10` might carry a flow of `7`. The flow on every edge must satisfy two rules:
+
+- **Capacity constraint**: flow on an edge cannot exceed its capacity.
+- **Conservation constraint**: for every intermediate node, total flow in equals total flow out.
+
+The **maximum flow** is the largest total flow that can be delivered from `s` to `t` while satisfying both constraints simultaneously.
+
+## The sink node visual metaphor
+
+In the MaxFlux Generator UI, the sink node (`t`) acts as a lamp. It lights up when the computed maximum flow meets or exceeds the **expected maximum flow** you configure for the graph.
+
+```
+actual max flow ≥ expected max flow  →  lamp on
+actual max flow  < expected max flow  →  lamp off
+```
+
+This lets you verify at a glance whether a graph design achieves a target throughput, without reading raw numbers.
+
+## The residual graph
+
+The Ford-Fulkerson algorithm does not operate on the original graph directly. It works on a **residual graph** — a derived graph that tracks remaining capacity after flow has been assigned.
+
+For every edge `(u, v)` with capacity `c` and current flow `f`:
+
+- The **forward residual edge** `(u, v)` has residual capacity `c - f` (how much more can be pushed).
+- The **backward residual edge** `(v, u)` has residual capacity `f` (how much existing flow can be cancelled).
+
+In the implementation, the residual graph starts as a copy of the original capacity matrix and is updated in place during the algorithm:
+
+```typescript verifyMaxFlux.ts
+const rGraph = new Array(V);
+
+for (u = 0; u < V; u++) {
+  rGraph[u] = new Array(V);
+  for (v = 0; v < V; v++)
+    rGraph[u][v] = graph[u][v];
+}
+```
+
+As augmenting paths are found, both `rGraph[u][v]` (forward) and `rGraph[v][u]` (backward) are updated, enabling the algorithm to "undo" flow assignments when a better routing exists.
+
+<Info>
+The backward edges in the residual graph are what give Ford-Fulkerson its power: they allow the algorithm to reroute flow that was committed in an earlier iteration if a globally better solution requires it.
+</Info>
+
+## Summary
+
+<AccordionGroup>
+  <Accordion title="What makes a valid flow graph?">
+    A valid flow graph must have exactly one source (index 0) and one sink (last index), a finite set of intermediate nodes, directed edges with non-negative integer capacities, and at least one directed path from source to sink.
+  </Accordion>
+  <Accordion title="What is the difference between capacity and flow?">
+    Capacity is the maximum a given edge can carry — it is fixed by the graph definition. Flow is the amount actually assigned to that edge by the algorithm — it varies between 0 and the edge's capacity.
+  </Accordion>
+  <Accordion title="Why does the generator use a residual graph?">
+    The residual graph allows the algorithm to explore and revise flow assignments iteratively. Without it, early greedy choices could block paths that would yield higher total flow.
+  </Accordion>
+</AccordionGroup>

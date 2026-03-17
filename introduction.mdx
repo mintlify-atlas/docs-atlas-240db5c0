@@ -1,0 +1,75 @@
+---
+title: Introduction
+description: A React-based interactive tool for visualizing Network Flux graphs and computing maximum flow using the Ford-Fulkerson algorithm.
+---
+
+# NetworkFlux & MaxFlux Generator
+
+NetworkFlux & MaxFlux Generator is an interactive web application for visualizing **network flow graphs** and computing the **maximum flow** through a network using the Ford-Fulkerson algorithm. Built with React and React Flow, it provides a step-by-step visualization of the algorithm so you can follow the computation at your own pace.
+
+<CardGroup cols={2}>
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Get the app running locally in minutes
+  </Card>
+  <Card title="Input Format" icon="file-code" href="/usage/input-format">
+    Learn how to define your graph as a JSON adjacency matrix
+  </Card>
+  <Card title="Ford-Fulkerson Algorithm" icon="diagram-project" href="/concepts/ford-fulkerson">
+    Understand the algorithm powering the max flow computation
+  </Card>
+  <Card title="Step-by-Step Walkthrough" icon="forward-step" href="/usage/step-by-step">
+    Navigate the algorithm one augmenting path at a time
+  </Card>
+</CardGroup>
+
+## Key features
+
+<CardGroup cols={2}>
+  <Card title="Interactive graph visualization" icon="share-nodes">
+    Pan, zoom, and explore your network flow graph rendered with React Flow. Nodes and edges are automatically positioned for clarity.
+  </Card>
+  <Card title="Ford-Fulkerson max flow" icon="code-branch">
+    Computes the maximum flow from source **s** to sink **t** using BFS-based augmenting paths (Edmonds-Karp variant).
+  </Card>
+  <Card title="Step-by-step navigation" icon="list-ol">
+    Walk forward and backward through each augmenting path step. The residual graph updates in real time.
+  </Card>
+  <Card title="JSON adjacency matrix input" icon="brackets-curly">
+    Define any directed weighted graph using a simple JSON 2D array — no GUI graph editor required.
+  </Card>
+  <Card title="Visual source and sink indicators" icon="circle-nodes">
+    The source node **s** displays a server icon; the sink node **t** shows a lamp that lights up when max flow meets the expected value.
+  </Card>
+  <Card title="Bidirectional edge rendering" icon="arrows-left-right">
+    Parallel edges between the same pair of nodes are rendered with a bezier curve offset so they never overlap.
+  </Card>
+</CardGroup>
+
+## Tech stack
+
+| Technology | Purpose |
+|---|---|
+| [React 18](https://react.dev) | UI framework |
+| [React Flow 11](https://reactflow.dev) | Graph visualization engine |
+| [TypeScript 5](https://www.typescriptlang.org) | Type-safe codebase |
+| [Vite 4](https://vitejs.dev) | Development server and bundler |
+| [@tisoap/react-flow-smart-edge](https://github.com/tisoap/react-flow-smart-edge) | Smart edge routing library (bundled) |
+
+## Project structure
+
+```
+src/
+├── pages/
+│   └── NetworkFlux/
+│       ├── NetworkFlux.tsx       # Main page component
+│       ├── TextUpdaterNode.tsx   # Custom React Flow node
+│       ├── CustomEdge.tsx        # Custom React Flow edge
+│       └── initialStates.ts      # Initial empty graph state
+├── utils/
+│   ├── generateNodesAndEdges.ts  # Converts adjacency matrix → React Flow nodes/edges
+│   └── verifyMaxFlux.ts          # Ford-Fulkerson + BFS implementation
+└── components/
+    ├── Button/
+    ├── Input/
+    └── TextArea/
+```

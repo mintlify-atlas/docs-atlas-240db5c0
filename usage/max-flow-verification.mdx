@@ -1,0 +1,64 @@
+---
+title: Max flow verification
+description: How to compute and verify the maximum flow through your network.
+---
+
+After generating your graph, you can run the **Ford-Fulkerson** algorithm to compute the true maximum flow from source to sink.
+
+<Warning>
+You must generate the graph first before starting verification. Clicking **Verificar Fluxo Máximo** without a valid graph loaded will produce incorrect results.
+</Warning>
+
+## Starting verification
+
+Click the **Verificar Fluxo Máximo** (Verify Max Flow) button beneath the form. This triggers the Ford-Fulkerson algorithm, which:
+
+1. Finds all augmenting paths from source (node 0) to sink (last node) in the residual graph.
+2. Pushes the maximum possible flow along each path.
+3. Updates the residual graph to reflect remaining capacities.
+4. Repeats until no augmenting path exists.
+
+When the algorithm finishes, an alert displays the result:
+
+```
+O Fluxo Máximo é: {maxFlow}
+```
+
+For example, for the 4-node matrix `[[0,10,10,0],[0,0,5,15],[0,0,0,10],[0,0,0,0]]`, the alert would read:
+
+```
+O Fluxo Máximo é: 20
+```
+
+## What happens after completion
+
+- The alert shows the final maximum flow value.
+- The graph **resets** to its original capacity display — all edge labels return to their initial capacities.
+- The **Verificar Fluxo Máximo** button reappears, allowing you to run verification again.
+
+## The sink lamp indicator
+
+The sink node (last index) displays a lamp icon. Its state reflects whether the computed max flow meets your expectation:
+
+| Condition | Lamp state |
+|-----------|------------|
+| `computedMaxFlow < expectedMaxFlow` | Lamp off |
+| `computedMaxFlow ≥ expectedMaxFlow` | Lamp on |
+
+This gives you an instant visual signal confirming whether the network can sustain your target flow.
+
+## Algorithm details
+
+The app uses the **Ford-Fulkerson** method, implemented in `verifyMaxFlux.ts`. It calls `fordFulkerson(jsonData, 0, jsonData.length - 1, jsonData.length, stepStop)` with source index `0` and sink index `n-1`.
+
+The function returns:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `maxFlow` | `number` | The computed maximum flow from s to t |
+| `rGraph` | `number[][]` | The residual graph after all augmenting paths are exhausted |
+| `finished` | `boolean` | `true` when no more augmenting paths exist |
+
+<Note>
+To navigate through the algorithm one step at a time and observe how the residual graph evolves, see the [Step-by-step walkthrough](/usage/step-by-step).
+</Note>

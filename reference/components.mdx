@@ -1,0 +1,211 @@
+---
+title: Components reference
+description: React components used to build the NetworkFlux & MaxFlux Generator visualization.
+---
+
+## NetworkFlux
+
+The main page component. Manages application state and renders the input form alongside the React Flow canvas that displays the network graph.
+
+This component accepts no props. It holds the following internal state:
+
+| State variable | Type | Description |
+|---|---|---|
+| `jsonData` | `string` | Raw adjacency matrix input from the user, as a JSON string. |
+| `maxFlowExpected` | `string` | The expected max flow value entered by the user. Compared against the computed `maxFlow` to determine whether the sink node displays the lamp-on or lamp-off image. |
+| `stepStop` | `number \| undefined` | When set, instructs the algorithm to stop after a specific augmentation step, enabling step-by-step visualization. |
+| `verifyMaxFluxStarted` | `boolean` | Tracks whether the max flow computation has been initiated, used to control rendering of the graph. |
+| `maxFlowInitialFlux` | `number \| undefined` | Stores the max flow value from a previous computation pass to preserve it across re-renders or step-based replays. |
+
+---
+
+## TextUpdaterNode
+
+A custom React Flow node component that renders each vertex in the network graph. Its appearance changes depending on whether it represents the source, sink, or an intermediate node.
+
+### Visual behavior
+
+- **Source node** (`node === 0`): Displays a server/stack image (`stack.jpg`).
+- **Sink node** (`node === nodesQuantity - 1`): Displays a lamp image. Shows `lamp-on.jpeg` when `maxFlow >= maxFlowExpected`; shows `lamp-off.jpeg` otherwise.
+- **Intermediate nodes**: Display the node's numeric index as a text label centered within the circle.
+
+### Handle positioning
+
+Target handles (incoming edges) default to `Position.Left`. For intermediate-to-intermediate connections, the position is adjusted based on the parity of the node indices:
+- Odd node receiving from an even node → `Position.Top`
+- Even node receiving from an odd node → `Position.Bottom`
+
+Source handles (outgoing edges) follow the same parity logic in reverse, defaulting to `Position.Right`.
+
+Handles to/from the source node (index `0`) or sink node (index `nodesQuantity - 1`) always use the default Left/Right positions.
+
+### Props
+
+<ParamField path="isConnectable" type="boolean" required>
+  Passed through to React Flow `Handle` components. Controls whether the user can manually connect handles in the canvas.
+</ParamField>
+
+<ParamField path="data" type="object" required>
+  Node data object constructed by `generateNodesAndEdges`. Contains all information needed to render the node.
+
+  <Expandable title="data properties">
+    <ParamField path="data.label" type="string" required>
+      Display label for the node. `'s'` for the source node, `'t'` for the sink node, and the node index as a string for all intermediate nodes.
+    </ParamField>
+
+    <ParamField path="data.node" type="number" required>
+      The index of this node in the adjacency matrix. `0` is always the source; `nodesQuantity - 1` is always the sink.
+    </ParamField>
+
+    <ParamField path="data.nodesQuantity" type="number" required>
+      The total number of nodes in the graph. Used to identify source and sink nodes by comparing against `data.node`.
+    </ParamField>
+
+    <ParamField path="data.connections" type="object[]" required>
+      Outgoing edges from this node. Each entry corresponds to one React Flow source `Handle`.
+
+      <Expandable title="connection properties">
+        <ParamField path="data.connections[].id" type="string" required>
+          Handle identifier, formatted as `s{nodeIndex}-{targetNodeIndex}` (e.g., `s0-1`).
+        </ParamField>
+        <ParamField path="data.connections[].targetNode" type="number" required>
+          Index of the node this edge points to.
+        </ParamField>
+        <ParamField path="data.connections[].value" type="number" required>
+          Edge capacity. Only edges with a value greater than `0` are included.
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+    <ParamField path="data.reverseConnections" type="object[]" required>
+      Incoming edges to this node. Each entry corresponds to one React Flow target `Handle`.
+
+      <Expandable title="reverseConnection properties">
+        <ParamField path="data.reverseConnections[].id" type="string" required>
+          Handle identifier, formatted as `t{nodeIndex}-{sourceNodeIndex}` (e.g., `t2-0`).
+        </ParamField>
+        <ParamField path="data.reverseConnections[].sourceNode" type="number" required>
+          Index of the node this edge originates from.
+        </ParamField>
+        <ParamField path="data.reverseConnections[].targetNode" type="number" required>
+          Index of this node (the target).
+        </ParamField>
+      </Expandable>
+    </ParamField>
+
+    <ParamField path="data.maxFlow" type="number" required>
+      The actual maximum flow computed by the Ford-Fulkerson algorithm. Used by the sink node to determine which lamp image to display.
+    </ParamField>
+
+    <ParamField path="data.maxFlowExpected" type="string" required>
+      The expected maximum flow value entered by the user. The sink node shows the lamp-on image when `maxFlow >= maxFlowExpected`.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+---
+
+## CustomEdge
+
+A custom React Flow edge component that renders directed edges between nodes. It automatically detects bidirectional connections and curves them to prevent overlap.
+
+### Bidirectional detection
+
+`CustomEdge` subscribes to the React Flow store via `useStore` and checks whether a reverse edge exists between the same pair of nodes (i.e., an edge where `source === target` of the current edge and `target === source`). When a reverse edge is detected, it uses `getSpecialPath` instead of the standard bezier path to visually separate the two edges.
+
+The offset passed to `getSpecialPath` is `+30` when `sourceX < targetX` (left-to-right edge) and `-30` when `sourceX >= targetX` (right-to-left edge).
+
+### Props
+
+<ParamField path="id" type="string" required>
+  Unique identifier for the edge.
+</ParamField>
+
+<ParamField path="source" type="string" required>
+  ID of the source node.
+</ParamField>
+
+<ParamField path="target" type="string" required>
+  ID of the target node.
+</ParamField>
+
+<ParamField path="sourceX" type="number" required>
+  X coordinate of the source handle, in canvas space.
+</ParamField>
+
+<ParamField path="sourceY" type="number" required>
+  Y coordinate of the source handle, in canvas space.
+</ParamField>
+
+<ParamField path="targetX" type="number" required>
+  X coordinate of the target handle, in canvas space.
+</ParamField>
+
+<ParamField path="targetY" type="number" required>
+  Y coordinate of the target handle, in canvas space.
+</ParamField>
+
+<ParamField path="sourcePosition" type="Position" required>
+  React Flow `Position` enum value for the source handle side.
+</ParamField>
+
+<ParamField path="targetPosition" type="Position" required>
+  React Flow `Position` enum value for the target handle side.
+</ParamField>
+
+<ParamField path="style" type="object" default="{}">
+  Inline CSS styles applied to the edge path. Edges are styled with `strokeWidth: 2` and `stroke: '#FF0072'` by default when created in `generateNodesAndEdges`.
+</ParamField>
+
+<ParamField path="markerEnd" type="object">
+  React Flow marker configuration for the arrowhead. Edges use `MarkerType.ArrowClosed` with color `#FF0072` by default.
+</ParamField>
+
+<ParamField path="label" type="string | number">
+  Text rendered inside the edge label button. Displays the edge capacity value.
+</ParamField>
+
+---
+
+## getSpecialPath
+
+A helper function that generates a quadratic bezier SVG path string with a perpendicular offset. Used by `CustomEdge` to visually separate bidirectional edges that would otherwise overlap.
+
+```typescript
+getSpecialPath(params: GetSpecialPathParams, offset: number): string
+```
+
+### Parameters
+
+<ParamField path="params" type="GetSpecialPathParams" required>
+  Coordinates of the edge endpoints.
+
+  <Expandable title="GetSpecialPathParams properties">
+    <ParamField path="params.sourceX" type="number" required>
+      X coordinate of the edge source.
+    </ParamField>
+    <ParamField path="params.sourceY" type="number" required>
+      Y coordinate of the edge source.
+    </ParamField>
+    <ParamField path="params.targetX" type="number" required>
+      X coordinate of the edge target.
+    </ParamField>
+    <ParamField path="params.targetY" type="number" required>
+      Y coordinate of the edge target.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField path="offset" type="number" required>
+  Displacement applied to the bezier control point. Positive values curve the path down and to the right; negative values curve it up and to the left. `CustomEdge` passes `+30` or `-30` depending on edge direction.
+</ParamField>
+
+### Return value
+
+Returns an SVG path string using a quadratic bezier curve:
+
+```
+M {sourceX} {sourceY} Q {centerX + offset} {centerY + offset} {targetX} {targetY}
+```
+
+Where `centerX = (sourceX + targetX) / 2` and `centerY = (sourceY + targetY) / 2`. The control point is shifted by `offset` in both the X and Y directions, producing a diagonal curve that separates the two edges of a bidirectional pair.

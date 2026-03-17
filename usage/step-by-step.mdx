@@ -1,0 +1,87 @@
+---
+title: Step-by-step walkthrough
+description: Navigate the Ford-Fulkerson algorithm one edge-update at a time.
+---
+
+The step-by-step mode lets you pause the Ford-Fulkerson algorithm after each individual edge update and inspect the residual graph at that point in time. This is useful for understanding how augmenting paths are found and how capacities change across the network.
+
+## Entering step mode
+
+Click **Verificar Fluxo Máximo** to start the algorithm. The button is replaced by two navigation controls:
+
+| Button | Label | Action |
+|--------|-------|--------|
+| Next step | **Andar Passo** | Advance one edge update |
+| Previous step | **Voltar Passo** | Go back one edge update |
+
+<Info>
+The algorithm is re-run from the beginning on every step navigation. The `stepStop` counter tells it how many edge updates to apply before returning, so stepping forward and backward is always consistent.
+</Info>
+
+## How stepping works
+
+Internally, `stepStop` is an integer that starts at `0` when you first click **Verificar Fluxo Máximo**.
+
+- **Andar Passo** increments `stepStop` by 1. The app calls `verifyMaxFlux(jsonData, stepStop)`, which replays Ford-Fulkerson from the beginning and stops after `stepStop` edge updates. The residual graph at that moment is passed to `generateNodesAndEdges` and rendered on the canvas.
+- **Voltar Passo** decrements `stepStop` by 1. If `stepStop` reaches `0` or below, the algorithm resets: `verifyMaxFluxStarted` is cleared, the original graph is re-rendered from the initial JSON, and the two step buttons are replaced by the single **Verificar Fluxo Máximo** button again.
+
+Edge labels on the canvas update after every step to reflect the **remaining residual capacity** on each directed edge.
+
+## What counts as one step
+
+A single step corresponds to one edge update inside the inner loop of Ford-Fulkerson. For each augmenting path found, the algorithm iterates over every edge in that path and updates both the forward and backward residual capacities. Each such update increments the internal `currentStep` counter. When `currentStep` equals `stepStop`, the function returns early with `finished: false`.
+
+## Completion
+
+When no more augmenting paths exist, `verifyMaxFlux` returns `{ finished: true, maxFlow, rGraph }`. The app:
+
+1. Displays the alert: `O Fluxo Máximo é: {maxFlow}`
+2. Resets `stepStop` to `-1` and clears `verifyMaxFluxStarted`.
+3. Re-renders the graph with the original capacities from the initial JSON.
+
+## Example walkthrough
+
+Using the 4-node matrix:
+
+```json
+[[0,10,10,0],[0,0,5,15],[0,0,0,10],[0,0,0,0]]
+```
+
+The graph has five edges: s→1 (10), s→2 (10), 1→2 (5), 1→t (15), 2→t (10).
+
+<Steps>
+  <Step title="Initial graph (before any steps)">
+    Click **Gerar Rede de Fluxo** to see the network at full capacity. Each edge label shows its original capacity.
+
+    Then click **Verificar Fluxo Máximo** to enter step mode at `stepStop = 0`.
+  </Step>
+  <Step title="Step 0 — first augmenting path begins">
+    Ford-Fulkerson finds the path **s → 1 → t** (nodes 0 → 1 → 3) with a bottleneck of `min(10, 15) = 10`.
+
+    The first edge update (s→1) is applied. The residual capacity of s→1 drops from 10 to 0, and the back-edge 1→s gains capacity 10.
+  </Step>
+  <Step title="Step 1 — second edge of first path">
+    The second edge on the same path (1→t) is updated. Residual capacity of 1→t drops from 15 to 5; back-edge t→1 gains 10.
+
+    After this step the first augmenting path is fully applied: 10 units of flow from s to t.
+  </Step>
+  <Step title="Step 2 — second augmenting path: s → 2 → t">
+    Ford-Fulkerson finds **s → 2 → t** (nodes 0 → 2 → 3) with bottleneck `min(10, 10) = 10`.
+
+    Edge s→2 is updated: residual drops from 10 to 0.
+  </Step>
+  <Step title="Step 3 — second edge of second path">
+    Edge 2→t is updated: residual drops from 10 to 0.
+
+    Total flow so far: 20 units. No more augmenting paths exist, so the next step will trigger `finished: true` and display the alert.
+  </Step>
+  <Step title="Algorithm complete">
+    The alert shows: **O Fluxo Máximo é: 20**
+
+    The graph resets to its original capacity display. The sink lamp lights up because 20 ≥ the expected max flow you entered.
+  </Step>
+</Steps>
+
+<Tip>
+Use **Voltar Passo** to replay any step you want to re-examine. The graph re-renders consistently because the algorithm is always replayed from the start up to the chosen step count.
+</Tip>

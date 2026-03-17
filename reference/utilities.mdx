@@ -1,0 +1,186 @@
+---
+title: Utilities reference
+description: Core utility functions powering graph generation and maximum flow computation.
+---
+
+## generateNodesAndEdges
+
+Transforms a raw adjacency matrix into React Flow `Node` and `Edge` arrays ready for rendering. Internally calls `verifyMaxFlux` to compute the maximum flow unless a precomputed value is supplied.
+
+```typescript
+generateNodesAndEdges(
+  data: number[][],
+  maxFlowExpected: string | number,
+  maxFlowInitialFlux?: number
+): { nodes: Node[], edges: Edge[], graphWidth: number, maxFlow: number }
+```
+
+### Parameters
+
+<ParamField path="data" type="number[][]" required>
+  Adjacency matrix representing the flow network. `data[i][j]` is the capacity of the edge from node `i` to node `j`. A value of `0` or less means no edge exists. Node `0` is always the source; node `data.length - 1` is always the sink.
+</ParamField>
+
+<ParamField path="maxFlowExpected" type="string | number" required>
+  The expected maximum flow entered by the user. Stored verbatim in each node's `data.maxFlowExpected` field and used by the sink node (`TextUpdaterNode`) to decide which lamp image to display.
+</ParamField>
+
+<ParamField path="maxFlowInitialFlux" type="number">
+  An optional precomputed maximum flow value. When provided, this value is used directly and `verifyMaxFlux` is not called. Useful when replaying a step-by-step visualization that has already calculated the final flow.
+</ParamField>
+
+### Return value
+
+<ResponseField name="nodes" type="Node[]" required>
+  Array of React Flow node objects, one per row in the adjacency matrix. Each node uses the `textUpdater` type and is positioned on a two-row alternating layout:
+  - Source (index `0`) and sink (index `data.length - 1`) are centered at `y = 125`.
+  - Intermediate nodes alternate between `y = 0` (even index) and `y = 250` (odd index).
+  - X positions step by `200px` per column, with odd/even pairs sharing a column.
+</ResponseField>
+
+<ResponseField name="edges" type="Edge[]" required>
+  Array of React Flow edge objects for every positive-capacity entry in the adjacency matrix. Each edge is animated, uses the `customEdge` type, and carries the capacity value as its label. Edge IDs follow the format `e{sourceIndex}-{targetIndex}`.
+</ResponseField>
+
+<ResponseField name="graphWidth" type="number" required>
+  Computed pixel width of the generated graph layout. Used by the caller to center the React Flow viewport after rendering.
+</ResponseField>
+
+<ResponseField name="maxFlow" type="number" required>
+  The maximum flow through the network. Equal to `maxFlowInitialFlux` when that parameter is provided; otherwise the value returned by `verifyMaxFlux`.
+</ResponseField>
+
+### Node layout algorithm
+
+Intermediate nodes are placed in a staggered two-row grid. The function tracks a `countOf2` toggle that flips between `0` and `1` for each intermediate node. When `countOf2 === 1`, the new node shares the same horizontal column as the previous node. This produces pairs of nodes stacked vertically, with the source and sink each occupying their own centered column.
+
+---
+
+## verifyMaxFlux
+
+Entry point for maximum flow computation. Accepts either a parsed adjacency matrix or a raw JSON string, then delegates to `fordFulkerson` with the source fixed at index `0` and the sink at index `data.length - 1`.
+
+```typescript
+verifyMaxFlux(
+  data: number[][] | string,
+  stepStop?: number
+): { maxFlow: number, rGraph: number[][], finished: boolean }
+```
+
+### Parameters
+
+<ParamField path="data" type="number[][] | string" required>
+  The flow network adjacency matrix. Accepts either a parsed 2D array or a JSON string representation of one. If `JSON.parse` succeeds, the parsed result is used; otherwise the value is used as-is. This makes the function usable directly with the raw text input from the UI.
+</ParamField>
+
+<ParamField path="stepStop" type="number">
+  Optional step index at which to pause computation. Passed directly to `fordFulkerson`. When omitted or `undefined`, the algorithm runs to completion.
+</ParamField>
+
+### Return value
+
+<ResponseField name="maxFlow" type="number" required>
+  The maximum flow value computed up to the point of completion or early stop.
+</ResponseField>
+
+<ResponseField name="rGraph" type="number[][]" required>
+  The residual graph after the algorithm terminates (or stops early). Each entry `rGraph[u][v]` is the remaining capacity on edge `u → v`. This can be used to visualize intermediate algorithm states.
+</ResponseField>
+
+<ResponseField name="finished" type="boolean" required>
+  `true` if the algorithm ran to completion (no more augmenting paths exist). `false` if execution was halted early because `stepStop` was reached.
+</ResponseField>
+
+---
+
+## fordFulkerson (internal)
+
+<Note>This function is not exported. It is documented here for completeness and to aid understanding of the algorithm's step-stop mechanism.</Note>
+
+Implements the Ford-Fulkerson max flow algorithm using BFS (Edmonds-Karp variant) to find augmenting paths. Operates on a copy of the input graph so the original adjacency matrix is never mutated.
+
+```typescript
+fordFulkerson(
+  graph: number[][],
+  s: number,
+  t: number,
+  V: number,
+  stepStop: number | undefined
+): { maxFlow: number, rGraph: number[][], finished: boolean }
+```
+
+### Parameters
+
+<ParamField path="graph" type="number[][]" required>
+  Adjacency matrix of edge capacities. Copied internally into `rGraph` before modification.
+</ParamField>
+
+<ParamField path="s" type="number" required>
+  Source node index. Always `0` when called from `verifyMaxFlux`.
+</ParamField>
+
+<ParamField path="t" type="number" required>
+  Sink node index. Always `graph.length - 1` when called from `verifyMaxFlux`.
+</ParamField>
+
+<ParamField path="V" type="number" required>
+  Total number of vertices. Used to size the `parent` array passed to `breadthFirstSearch`.
+</ParamField>
+
+<ParamField path="stepStop" type="number | undefined" required>
+  When set to a non-null number, the algorithm returns early with `finished: false` after completing `stepStop` edge relaxations within an augmenting path. Each edge update along a path increments `currentStep` by one. This enables step-by-step playback in the UI.
+</ParamField>
+
+### How it works
+
+1. Creates a residual graph `rGraph` as a deep copy of `graph`.
+2. Repeatedly calls `breadthFirstSearch` to find an augmenting path from `s` to `t`.
+3. For each path found, computes the bottleneck capacity (`path_flow`) by traversing the `parent` array from `t` back to `s`.
+4. Updates `rGraph` by subtracting `path_flow` from forward edges and adding it to reverse edges.
+5. If `stepStop` equals `currentStep` during step 4, returns immediately with the current `maxFlow` and `finished: false`.
+6. Accumulates `path_flow` into `max_flow` after each full path is processed.
+7. Returns `{ maxFlow: max_flow, rGraph, finished: true }` when no more augmenting paths exist.
+
+---
+
+## breadthFirstSearch (internal)
+
+<Note>This function is not exported. It is documented here for completeness.</Note>
+
+Standard BFS used by `fordFulkerson` to determine whether an augmenting path exists in the residual graph, and to record that path in the `parent` array.
+
+```typescript
+breadthFirstSearch(
+  rGraph: number[][],
+  s: number,
+  t: number,
+  parent: number[],
+  V: number
+): boolean
+```
+
+### Parameters
+
+<ParamField path="rGraph" type="number[][]" required>
+  The current residual graph. An edge `u → v` is considered traversable when `rGraph[u][v] > 0`.
+</ParamField>
+
+<ParamField path="s" type="number" required>
+  Source node index. BFS starts here.
+</ParamField>
+
+<ParamField path="t" type="number" required>
+  Sink node index. BFS returns `true` immediately upon reaching this node.
+</ParamField>
+
+<ParamField path="parent" type="number[]" required>
+  Output array populated during traversal. `parent[v]` is set to `u` when node `v` is first discovered from node `u`. The caller uses this to reconstruct the augmenting path by walking backwards from `t` to `s`.
+</ParamField>
+
+<ParamField path="V" type="number" required>
+  Total number of vertices. Used to initialize the `visited` array.
+</ParamField>
+
+### Return value
+
+Returns `true` if the sink node `t` is reachable from the source node `s` through edges with remaining capacity, and `false` otherwise. A return value of `false` signals to `fordFulkerson` that the maximum flow has been reached.

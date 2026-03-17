@@ -1,0 +1,59 @@
+---
+title: Generating the graph
+description: How to generate and visualize a network flow graph from your adjacency matrix.
+---
+
+Once you have your adjacency matrix ready, use the form on the left to render the flow network as an interactive graph.
+
+## Workflow
+
+<Steps>
+  <Step title="Paste your JSON matrix">
+    Click the large text area and paste your adjacency matrix. See [Input format](/usage/input-format) for the expected structure.
+
+    ```json
+    [[0,10,10,0],[0,0,5,15],[0,0,0,10],[0,0,0,0]]
+    ```
+  </Step>
+  <Step title="Enter the expected max flow">
+    Type a number into the **Fluxo Máximo esperado** (Expected max flow) field. This value is used to compare against the computed maximum flow at the end of the verification step — it does not affect the algorithm itself.
+  </Step>
+  <Step title="Click Gerar Rede de Fluxo">
+    Press the **Gerar Rede de Fluxo** (Generate Flow Network) button. The app calls `generateNodesAndEdges`, populates the canvas with nodes and edges, and smoothly pans the viewport to center the graph.
+  </Step>
+</Steps>
+
+## What the graph looks like
+
+### Nodes
+
+Every node is rendered as a circle with a light grey background.
+
+| Node type | Appearance |
+|-----------|------------|
+| Source (index 0) | Server/stack icon inside the circle |
+| Sink (last index) | Lamp icon — off by default, lights up when max flow ≥ expected |
+| Intermediate nodes | Their numeric index displayed in the centre |
+
+### Edges
+
+Edges are animated pink arrows with a label showing the edge capacity. When two nodes have edges running in both directions, the edges are drawn as curved bezier arcs offset from each other so neither overlaps.
+
+## The expected max flow field
+
+The number you enter is stored and compared against the computed max flow when you run the verification step. If the computed result meets or exceeds your expected value, the sink node switches from the lamp-off image to the lamp-on image, giving you an immediate visual confirmation.
+
+<Info>
+You can re-generate the graph at any time by updating the JSON or the expected flow value and clicking the button again. The canvas will reset and re-render from scratch.
+</Info>
+
+## Error handling
+
+<AccordionGroup>
+  <Accordion title='"Json inválido" alert'>
+    Appears when the content of the text area cannot be parsed as valid JSON. Check for missing brackets, trailing commas, or unquoted keys, then try again.
+  </Accordion>
+  <Accordion title='"Fluxo máximo esperado inválido" alert'>
+    Appears when the expected max flow field is empty or contains only whitespace. Enter a numeric value before generating the graph.
+  </Accordion>
+</AccordionGroup>

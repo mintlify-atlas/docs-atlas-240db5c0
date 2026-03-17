@@ -1,0 +1,78 @@
+---
+title: Input format
+description: How to define your network flow graph as a JSON adjacency matrix.
+---
+
+NetworkFlux represents a flow network as a **2D JSON adjacency matrix**. Each cell `matrix[i][j]` holds the capacity of the directed edge from node `i` to node `j`. A value of `0` means no edge exists between those two nodes.
+
+## Node indexing
+
+| Index | Role | Visual |
+|-------|------|--------|
+| `0` | Source node (s) | Server/stack icon |
+| `1` … `n-2` | Intermediate nodes | Number label |
+| `n-1` (last) | Sink node (t) | Lamp icon |
+
+The matrix must be square: an `n×n` matrix describes a graph with exactly `n` nodes.
+
+## Simple 4-node example
+
+```json
+[[0,10,10,0],[0,0,5,15],[0,0,0,10],[0,0,0,0]]
+```
+
+This describes four nodes: source (0), two intermediate nodes (1, 2), and sink (3).
+
+| Edge | From → To | Capacity |
+|------|-----------|----------|
+| s → 1 | 0 → 1 | 10 |
+| s → 2 | 0 → 2 | 10 |
+| 1 → 2 | 1 → 2 | 5 |
+| 1 → t | 1 → 3 | 15 |
+| 2 → t | 2 → 3 | 10 |
+
+## 6-node example
+
+A more complex network with four intermediate nodes:
+
+```json
+[
+  [0, 16, 13,  0,  0,  0],
+  [0,  0, 10, 12,  0,  0],
+  [0,  4,  0,  0, 14,  0],
+  [0,  0,  9,  0,  0, 20],
+  [0,  0,  0,  7,  0,  4],
+  [0,  0,  0,  0,  0,  0]
+]
+```
+
+Node 0 is the source, node 5 is the sink. The non-zero edges are:
+
+| Edge | Capacity |
+|------|----------|
+| 0 → 1 | 16 |
+| 0 → 2 | 13 |
+| 1 → 2 | 10 |
+| 1 → 3 | 12 |
+| 2 → 1 | 4 |
+| 2 → 4 | 14 |
+| 3 → 2 | 9 |
+| 3 → 5 | 20 |
+| 4 → 3 | 7 |
+| 4 → 5 | 4 |
+
+## Rules
+
+- The matrix must be **square** (`n` rows, each with `n` values).
+- All capacity values must be **non-negative integers**.
+- Node indices start at **0**.
+- The diagonal (`matrix[i][i]`) should be `0` — self-loops are not meaningful for flow networks.
+- Row `0` represents the source; the last row represents the sink.
+
+## Where to paste it
+
+Paste the JSON array into the large text area on the left side of the interface. The field accepts any valid JSON array of arrays. Compact single-line format and pretty-printed multi-line format are both accepted.
+
+<Warning>
+The app validates that your input is valid JSON and that the expected max flow field is not empty, but it does **not** check that the matrix is square or that all values are non-negative numbers. Malformed matrices may produce unexpected visual output or incorrect flow computations.
+</Warning>

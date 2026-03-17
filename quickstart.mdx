@@ -1,80 +1,172 @@
 ---
-title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+title: Quickstart
+description: Get the NetworkFlux & MaxFlux Generator running locally and visualize your first network flow graph.
 ---
 
-## Get started in three steps
+This guide walks you through cloning the project, starting the development server, and running your first max-flow computation on a network graph.
 
-Get your documentation site running locally and make your first customization.
+## Prerequisites
 
-### Step 1: Set up your local environment
+Before you begin, make sure you have the following installed:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+- **Node.js** v16 or later — [nodejs.org](https://nodejs.org)
+- A package manager: **npm** (bundled with Node.js), **yarn**, or **pnpm**
+- **Git** — [git-scm.com](https://git-scm.com)
 
-### Step 2: Deploy your changes
+<Tip>
+  Run `node -v` and `npm -v` in your terminal to confirm your versions before proceeding.
+</Tip>
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+## Get up and running
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+<Steps>
+  <Step title="Clone the repository">
+    Clone the NetworkFlux & MaxFlux Generator repository to your local machine:
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```bash
+    git clone https://github.com/christhian12rv/NetworkFlux-MaxFlux-Generator.git
+    cd NetworkFlux-MaxFlux-Generator
+    ```
+  </Step>
 
-### Step 3: Go live
+  <Step title="Install dependencies">
+    Install the project dependencies using your preferred package manager:
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    <CodeGroup>
+
+    ```bash npm
+    npm install
+    ```
+
+    ```bash yarn
+    yarn
+    ```
+
+    ```bash pnpm
+    pnpm install
+    ```
+
+    </CodeGroup>
+
+    This installs React, ReactFlow, and all other required packages listed in `package.json`.
+  </Step>
+
+  <Step title="Start the development server">
+    Start the Vite development server:
+
+    <CodeGroup>
+
+    ```bash npm
+    npm run dev
+    ```
+
+    ```bash yarn
+    yarn dev
+    ```
+
+    ```bash pnpm
+    pnpm dev
+    ```
+
+    </CodeGroup>
+
+    Vite will print a local URL to your terminal, typically:
+
+    ```
+    VITE v4.x.x  ready in Xms
+
+    ➜  Local:   http://localhost:5173/
+    ➜  Network: use --host to expose
+    ```
+  </Step>
+
+  <Step title="Open the app in your browser">
+    Navigate to [http://localhost:5173](http://localhost:5173) in your browser. You should see the NetworkFlux interface with a text area for JSON input and a ReactFlow canvas.
+  </Step>
+
+  <Step title="Enter a sample adjacency matrix">
+    The app expects a flow network represented as a **JSON adjacency matrix** — a 2D array where `matrix[i][j]` is the capacity of the edge from node `i` to node `j`.
+
+    Paste the following example into the JSON text area:
+
+    ```json
+    [[0,10,10,0],[0,0,5,15],[0,0,0,10],[0,0,0,0]]
+    ```
+
+    This defines a 4-node network:
+
+    | Edge  | Capacity |
+    |-------|----------|
+    | 0 → 1 | 10       |
+    | 0 → 2 | 10       |
+    | 1 → 2 | 5        |
+    | 1 → 3 | 15       |
+    | 2 → 3 | 10       |
+
+    <Note>
+      Node `0` is the **source** and node `3` is the **sink**. All other nodes are intermediate. A value of `0` means no direct edge between two nodes.
+    </Note>
+  </Step>
+
+  <Step title="Enter the expected max flow value">
+    In the **Fluxo Máximo esperado** (Expected Max Flow) field, enter the max flow you expect for this network:
+
+    ```
+    20
+    ```
+
+    For the adjacency matrix above, the theoretical maximum flow from source (node 0) to sink (node 3) is **20**.
+
+    <Tip>
+      If you are unsure of the expected value, you can leave it blank or enter `0` — the app will still compute and display the result.
+    </Tip>
+  </Step>
+
+  <Step title="Generate the flow network">
+    Click the **Gerar Rede de Fluxo** (Generate Network Flux) button.
+
+    The ReactFlow canvas will render your network as a directed graph with labeled nodes and weighted edges representing the capacities you defined in the adjacency matrix.
+  </Step>
+
+  <Step title="Compute the maximum flow">
+    Click the **Verificar Fluxo Máximo** (Verify Max Flow) button to start the Ford-Fulkerson algorithm with BFS (Edmonds-Karp).
+
+    The app runs the algorithm step by step. Use the navigation buttons that appear to walk through each iteration:
+
+    - **Andar Passo** — advance to the next step
+    - **Voltar Passo** — go back to the previous step
+
+    Each step highlights the augmenting path found in that iteration and updates the residual graph. When the algorithm terminates, the computed maximum flow is displayed.
+
+    <Note>
+      For the sample matrix, the algorithm should converge to a max flow of **20**, matching the expected value you entered.
+    </Note>
+  </Step>
+</Steps>
+
+## Understanding the JSON format
+
+The adjacency matrix must be a valid JSON array of arrays. Each inner array represents one row of the matrix, and all rows must have the same length.
+
+```json
+[
+  [0, 10, 10,  0],
+  [0,  0,  5, 15],
+  [0,  0,  0, 10],
+  [0,  0,  0,  0]
+]
+```
+
+Both compact (single-line) and pretty-printed formats are accepted.
+
+<Warning>
+  The matrix must be square (N×N). Providing a non-square or malformed array will prevent the graph from generating correctly.
+</Warning>
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
+Now that you have the app running, you can:
 
-<CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
-</CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>
+- Experiment with larger networks by adding more nodes and edges to the adjacency matrix.
+- Observe how the Ford-Fulkerson algorithm finds different augmenting paths depending on your graph topology.
+- Modify the source code in `src/` to extend the visualization or add new features.
